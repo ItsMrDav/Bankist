@@ -76,7 +76,7 @@ const displayMovements = function (movements) {
           <div class="movements__type movements__type--${type}">${
       i + 1
     } ${type}</div>
-          <div class="movements__value">${mov}</div>
+          <div class="movements__value">${mov}€</div>
         </div>
     `;
 
@@ -88,9 +88,33 @@ displayMovements(account1.movements);
 // DISPLAYING BALANCE===========================================
 const calcDisplayPrintBalance = function (movements) {
   const balance = movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${balance} EUR`;
+  labelBalance.textContent = `${balance}€`;
 };
 calcDisplayPrintBalance(account1.movements);
+
+// DISPLAYING SUMMARY============================================
+const calcDisplaySummary = function (movements) {
+  const incomes = movements
+    .filter(mov => mov > 0)
+    .reduce((acc, mov) => acc + mov, 0);
+  labelSumIn.textContent = `${incomes}€`;
+
+  const outs = movements
+    .filter(mov => mov < 0)
+    .reduce((acc, mov) => acc + mov, 0);
+  labelSumOut.textContent = `${Math.abs(outs)}€`;
+
+  const interest = movements
+    .filter(mov => mov > 0)
+    .map(deposit => (deposit * 1.2) / 100)
+    .filter((int, i, arr) => {
+      console.log(arr);
+      return int >= 1;
+    })
+    .reduce((acc, int) => acc + int, 0);
+  labelSumInterest.textContent = `${interest}€`;
+};
+calcDisplaySummary(account1.movements);
 
 // CREATING USER NAMES===========================================
 const createUserNames = function (accs) {
@@ -186,7 +210,7 @@ console.log(max);
 console.log(Math.max(...movements));
 
 
-// CODING CHALLANGE #2
+// CODING CHALLANGE #2 & #3
 const data1 = [5, 2, 4, 1, 15, 8, 3];
 const data2 = [16, 6, 10, 5, 6, 1, 4];
 
@@ -200,4 +224,20 @@ const calcAverageHumanAge = function (ages) {
 };
 console.log(calcAverageHumanAge(data1));
 console.log(calcAverageHumanAge(data2));
+
+
+const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
+const eurToUsd = 1.1;
+
+// PIPELINE
+const totalDepositsUsd = movements
+  .filter(mov => mov > 0)
+  // .map(mov => mov * eurToUsd)
+  .map((mov, i, arr) => {
+    // console.log(arr);
+    return mov * eurToUsd;
+  })
+  .reduce((acc, mov) => acc + mov, 0);
+
+console.log(totalDepositsUsd.toFixed(2));
 */
