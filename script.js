@@ -65,7 +65,7 @@ const inputClosePin = document.querySelector('.form__input--pin');
 // ************* GENERAL *******************************************
 // *****************************************************************
 
-// DISPLAYING MOVEMENTS===========================================
+// DISPLAYING MOVEMENTS==================================================
 const displayMovements = function (movements) {
   containerMovements.innerHTML = '';
   movements.forEach(function (mov, i) {
@@ -85,14 +85,13 @@ const displayMovements = function (movements) {
 };
 // displayMovements(account1.movements);
 
-// DISPLAYING BALANCE===========================================
-const calcDisplayPrintBalance = function (movements) {
-  const balance = movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${balance}€`;
+// DISPLAYING BALANCE====================================================
+const calcDisplayPrintBalance = function (acc) {
+  acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
+  labelBalance.textContent = `${acc.balance}€`;
 };
-// calcDisplayPrintBalance(account1.movements);
 
-// DISPLAYING SUMMARY============================================
+// DISPLAYING SUMMARY====================================================
 const calcDisplaySummary = function (acc) {
   const incomes = acc.movements
     .filter(mov => mov > 0)
@@ -116,7 +115,7 @@ const calcDisplaySummary = function (acc) {
 };
 // calcDisplaySummary(account1.movements);
 
-// CREATING USER NAMES===========================================
+// CREATING USER NAMES===================================================
 const createUserNames = function (accs) {
   accs.forEach(acc => {
     acc.username = acc.owner
@@ -128,7 +127,17 @@ const createUserNames = function (accs) {
 };
 createUserNames(accounts);
 
-// LOGIN EVENT HANDLER ===========================================
+// UPDATE UI  ===========================================================
+const updateUI = function (acc) {
+  // Display movements
+  displayMovements(acc.movements);
+  // Display balance
+  calcDisplayPrintBalance(acc);
+  // Display summary
+  calcDisplaySummary(acc);
+};
+
+// LOGIN EVENT HANDLER ==================================================
 let currentAccount;
 
 btnLogin.addEventListener('click', function (e) {
@@ -151,12 +160,33 @@ btnLogin.addEventListener('click', function (e) {
     // Clear input fields
     inputLoginUsername.value = inputLoginPin.value = '';
 
-    // Display movements
-    displayMovements(currentAccount.movements);
-    // Display balance
-    calcDisplayPrintBalance(currentAccount.movements);
-    // Display summary
-    calcDisplaySummary(currentAccount);
+    // Update UI
+    updateUI(currentAccount);
+  }
+});
+
+// TRANSFER MONEY EVENT HANDLER ===========================================
+btnTransfer.addEventListener('click', function (e) {
+  // Prevent from submitting
+  e.preventDefault();
+  const amount = Number(inputTransferAmount.value);
+  const receiverAcc = accounts.find(
+    acc => acc.username === inputTransferTo.value
+  );
+  // Clear input fields
+  inputTransferTo.value = inputTransferAmount.value = '';
+
+  if (
+    amount > 0 &&
+    receiverAcc &&
+    currentAccount.balance >= amount &&
+    receiverAcc.username !== currentAccount.username
+  ) {
+    // Doing the transfer
+    currentAccount.movements.push(-amount);
+    receiverAcc.movements.push(amount);
+    // Update UI
+    updateUI(currentAccount);
   }
 });
 
