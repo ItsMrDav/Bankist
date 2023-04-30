@@ -137,6 +137,10 @@ const updateUI = function (acc) {
   calcDisplaySummary(acc);
 };
 
+// *****************************************************************
+// ************* EVENT HANDLERS ************************************
+// *****************************************************************
+
 // LOGIN EVENT HANDLER ==================================================
 let currentAccount;
 
@@ -187,6 +191,29 @@ btnTransfer.addEventListener('click', function (e) {
     receiverAcc.movements.push(amount);
     // Update UI
     updateUI(currentAccount);
+  }
+});
+
+// CLOSE ACCOUNT EVENT HANDLER ===========================================
+
+btnClose.addEventListener('click', function (e) {
+  e.preventDefault();
+
+  if (
+    inputCloseUsername.value === currentAccount.username &&
+    Number(inputClosePin.value) === currentAccount.pin
+  ) {
+    const index = accounts.findIndex(
+      acc => acc.username === currentAccount.username
+    );
+    // Clear input fields
+    inputCloseUsername.value = inputClosePin.value = '';
+
+    // Delete account
+    accounts.splice(index, 1);
+
+    // Hide UI
+    containerApp.style.opacity = 0;
   }
 });
 
@@ -314,4 +341,16 @@ console.log(accounts);
 
 const account = accounts.find(acc => acc.owner === 'Jessica Davis');
 console.log(account);
+
+
+// SOME & EVERY METHOD
+const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
+
+console.log(movements);
+
+// Equality
+console.log(movements.includes(-130));
+
+// Condition
+console.log(movements.some(mov => mov > 5000));
 */
