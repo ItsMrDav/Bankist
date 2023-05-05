@@ -3,11 +3,25 @@
 // *****************************************************************
 // ************* DATA **********************************************
 // *****************************************************************
+
 const account1 = {
   owner: 'Davut Simsek',
-  movements: [200, 450, -400, 3000, -650, -130, 70, 1300],
+  movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
   interestRate: 1.2, // %
   pin: 1111,
+
+  movementsDates: [
+    '2022-11-18T21:31:17.178Z',
+    '2022-12-23T07:42:02.383Z',
+    '2022-01-28T09:15:04.904Z',
+    '2022-04-01T10:17:24.185Z',
+    '2023-04-30T14:11:59.604Z',
+    '2023-05-01T17:01:17.194Z',
+    '2023-05-02T23:36:17.929Z',
+    '2023-05-03T10:51:36.790Z',
+  ],
+  currency: 'EUR',
+  locale: 'pt-PT', // de-DE
 };
 
 const account2 = {
@@ -15,23 +29,22 @@ const account2 = {
   movements: [5000, 3400, -150, -790, -3210, -1000, 8500, -30],
   interestRate: 1.5,
   pin: 2222,
+
+  movementsDates: [
+    '2019-11-01T13:15:33.035Z',
+    '2019-11-30T09:48:16.867Z',
+    '2019-12-25T06:04:23.907Z',
+    '2020-01-25T14:18:46.235Z',
+    '2020-02-05T16:33:06.386Z',
+    '2020-04-10T14:43:26.374Z',
+    '2020-06-25T18:49:59.371Z',
+    '2020-07-26T12:01:20.894Z',
+  ],
+  currency: 'USD',
+  locale: 'en-US',
 };
 
-const account3 = {
-  owner: 'Steven Thomas Williams',
-  movements: [200, -200, 340, -300, -20, 50, 400, -460],
-  interestRate: 0.7,
-  pin: 3333,
-};
-
-const account4 = {
-  owner: 'Sarah Smith',
-  movements: [430, 1000, 700, 50, 90],
-  interestRate: 1,
-  pin: 4444,
-};
-
-const accounts = [account1, account2, account3, account4];
+const accounts = [account1, account2];
 
 // *****************************************************************
 // ************* ELEMETS *******************************************
@@ -62,36 +75,68 @@ const inputCloseUsername = document.querySelector('.form__input--user');
 const inputClosePin = document.querySelector('.form__input--pin');
 
 // *****************************************************************
-// ************* GENERAL *******************************************
+// ************* GENERAL FUNCTIONS *********************************
 // *****************************************************************
 
+// FORMAT MOVEMENT DATE ==================================================
+
+const formatMovementDate = function (date, locale) {
+  const calcDaysPassed = (date1, date2) =>
+    Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24));
+
+  const daysPassed = calcDaysPassed(new Date(), date);
+
+  if (daysPassed === 0) return 'Today';
+  if (daysPassed === 1) return 'Yesterday';
+  if (daysPassed <= 7) return `${daysPassed} days ago`;
+
+  return new Intl.DateTimeFormat(locale).format(date);
+};
+
+// FORMAT CURRENCIES ====================================================
+
+const formatCur = function (value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency,
+  }).format(value);
+};
+
 // DISPLAYING MOVEMENTS==================================================
-const displayMovements = function (movements, sort = false) {
+const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
 
-  const movs = sort ? movements.slice().sort((a, b) => a - b) : movements;
+  const movs = sort
+    ? acc.movements.slice().sort((a, b) => a - b)
+    : acc.movements;
 
   movs.forEach(function (mov, i) {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
+
+    const date = new Date(acc.movementsDates[i]);
+    const displayDate = formatMovementDate(date, acc.locale);
+
+    const formattedMov = formatCur(mov, acc.locale, acc.currency);
 
     const html = `
         <div class="movements__row">
           <div class="movements__type movements__type--${type}">${
       i + 1
     } ${type}</div>
-          <div class="movements__value">${mov}€</div>
+          <div class="movements__date">${displayDate}</div>
+          <div class="movements__value">${formattedMov}</div>
         </div>
     `;
 
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
-// displayMovements(account1.movements);
 
 // DISPLAYING BALANCE====================================================
 const calcDisplayPrintBalance = function (acc) {
   acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
-  labelBalance.textContent = `${acc.balance}€`;
+
+  labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency);
 };
 
 // DISPLAYING SUMMARY====================================================
@@ -99,12 +144,12 @@ const calcDisplaySummary = function (acc) {
   const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0);
-  labelSumIn.textContent = `${incomes}€`;
+  labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);
 
   const outs = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0);
-  labelSumOut.textContent = `${Math.abs(outs)}€`;
+  labelSumOut.textContent = formatCur(Math.abs(outs), acc.locale, acc.currency);
 
   const interest = acc.movements
     .filter(mov => mov > 0)
@@ -114,9 +159,8 @@ const calcDisplaySummary = function (acc) {
       return int >= 1;
     })
     .reduce((acc, int) => acc + int, 0);
-  labelSumInterest.textContent = `${interest}€`;
+  labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
 };
-// calcDisplaySummary(account1.movements);
 
 // CREATING USER NAMES===================================================
 const createUserNames = function (accs) {
@@ -133,11 +177,40 @@ createUserNames(accounts);
 // UPDATE UI  ===========================================================
 const updateUI = function (acc) {
   // Display movements
-  displayMovements(acc.movements);
+  displayMovements(acc);
   // Display balance
   calcDisplayPrintBalance(acc);
   // Display summary
   calcDisplaySummary(acc);
+};
+
+// LOGOUT TIMER  =========================================================
+const startLogOutTimer = function () {
+  const tick = function () {
+    const min = String(Math.trunc(time / 60)).padStart(2, 0);
+    const sec = String(Math.trunc(time % 60)).padStart(2, 0);
+
+    // In each call, print the reamining time to UI
+    labelTimer.textContent = `${min}:${sec}`;
+
+    // When 0 seconds, stop timer and logout user
+    if (time === 0) {
+      clearInterval(timer);
+      labelWelcome.textContent = `Log in to get started`;
+      containerApp.style.opacity = 0;
+    }
+
+    // Decrease 1second
+    time--;
+  };
+
+  // Set time to 5 minutes
+  let time = 120;
+
+  // Call the timer every second
+  tick();
+  const timer = setInterval(tick, 1000);
+  return timer;
 };
 
 // *****************************************************************
@@ -145,7 +218,12 @@ const updateUI = function (acc) {
 // *****************************************************************
 
 // LOGIN EVENT HANDLER ==================================================
-let currentAccount;
+let currentAccount, timer;
+
+// FAKE AS ALWAYS LOGGED IN
+// currentAccount = account1;
+// updateUI(currentAccount);
+// containerApp.style.opacity = 100;
 
 btnLogin.addEventListener('click', function (e) {
   // Prevent form from submitting
@@ -157,16 +235,35 @@ btnLogin.addEventListener('click', function (e) {
   console.log(currentAccount);
 
   // currentAccount?.pin here is equal to currentAccount && currentAccount.pin
-  if (currentAccount?.pin === Number(inputLoginPin.value)) {
+  if (currentAccount?.pin === +inputLoginPin.value) {
     // Display UI and welcome message
     labelWelcome.textContent = `Welcome back, ${
       currentAccount.owner.split(' ')[0]
     }`;
     containerApp.style.opacity = 100;
 
+    // Create current date and time
+    const now = new Date();
+    const option = {
+      hour: 'numeric',
+      minute: 'numeric',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric',
+      // weekday: 'long',
+    };
+
+    labelDate.textContent = new Intl.DateTimeFormat(
+      currentAccount.locale,
+      option
+    ).format(now);
+
     // Clear input fields
     inputLoginUsername.value = inputLoginPin.value = '';
 
+    // Logout Timer
+    if (timer) clearInterval(timer);
+    timer = startLogOutTimer();
     // Update UI
     updateUI(currentAccount);
   }
@@ -176,7 +273,7 @@ btnLogin.addEventListener('click', function (e) {
 btnTransfer.addEventListener('click', function (e) {
   // Prevent from submitting
   e.preventDefault();
-  const amount = Number(inputTransferAmount.value);
+  const amount = +inputTransferAmount.value;
   const receiverAcc = accounts.find(
     acc => acc.username === inputTransferTo.value
   );
@@ -192,8 +289,17 @@ btnTransfer.addEventListener('click', function (e) {
     // Doing the transfer
     currentAccount.movements.push(-amount);
     receiverAcc.movements.push(amount);
+
+    // Add transfer date
+    currentAccount.movementsDates.push(new Date().toISOString());
+    receiverAcc.movementsDates.push(new Date().toISOString());
+
     // Update UI
     updateUI(currentAccount);
+
+    // Reset timer
+    clearInterval(timer);
+    timer = startLogOutTimer();
   }
 });
 
@@ -201,17 +307,26 @@ btnTransfer.addEventListener('click', function (e) {
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
 
-  const amount = Number(inputLoanAmount.value);
+  const amount = Math.floor(inputLoanAmount.value);
   if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-    // Add movement
-    currentAccount.movements.push(amount);
+    setTimeout(() => {
+      // Add movement
+      currentAccount.movements.push(amount);
 
-    // Update UI
-    updateUI(currentAccount);
+      // Add loan date
+      currentAccount.movementsDates.push(new Date().toISOString());
+
+      // Update UI
+      updateUI(currentAccount);
+    }, 2000);
   }
 
   // Clear Input Fields
   inputLoanAmount.value = '';
+
+  // Reset timer
+  clearInterval(timer);
+  timer = startLogOutTimer();
 });
 
 // CLOSE ACCOUNT EVENT HANDLER ===========================================
@@ -221,7 +336,7 @@ btnClose.addEventListener('click', function (e) {
 
   if (
     inputCloseUsername.value === currentAccount.username &&
-    Number(inputClosePin.value) === currentAccount.pin
+    +inputClosePin.value === currentAccount.pin
   ) {
     const index = accounts.findIndex(
       acc => acc.username === currentAccount.username
@@ -241,212 +356,6 @@ btnClose.addEventListener('click', function (e) {
 let sorted = false;
 btnSort.addEventListener('click', function (e) {
   e.preventDefault();
-  displayMovements(currentAccount.movements, !sorted);
+  displayMovements(currentAccount, !sorted);
   sorted = !sorted;
 });
-
-// *****************************************************************
-// ************* EXERCISES *****************************************
-// *****************************************************************
-/*
-// ***** CODING CHALLANGE #1 *********************************************
-const dogsJulia1 = [3, 5, 2, 12, 7];
-const dogsKate1 = [4, 1, 15, 8, 3];
-const dogsJulia2 = [9, 16, 6, 8, 3];
-const dogsKate2 = [10, 5, 6, 1, 4];
-
-const checkDogs = (arr1, arr2) => {
-  const correctedArr1 = arr1.slice(1, -2);
-  const allDogs = correctedArr1.concat(arr2);
-  allDogs.forEach((age, i, arr) => {
-    age >= 3
-    ? console.log(`Dog number ${i + 1} is an adult, and is ${age} years old`)
-    : console.log(`Dog number ${i + 1} is still a puppy is ${age} years old`);
-  });
-};
-
-checkDogs(dogsJulia1, dogsKate1);
-console.log(`-------DATA SET 2--------`);
-checkDogs([9, 16, 6, 8, 3], dogsKate2);
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-const eurToUsd = 1.1;
-
-const movementsUsd = movements.map(mov => Math.trunc(mov * eurToUsd));
-
-console.log(movements);
-console.log(movementsUsd);
-
-const movementsUsdFor = [];
-for (const mov of movements) {
-  movementsUsdFor.push(Math.trunc(mov * eurToUsd));
-}
-console.log(movementsUsdFor);
-
-const movementDescriptions = movements.map(
-  (mov, i) =>
-  `Movement ${i + 1}: You ${mov > 0 ? 'deposited' : 'withdrew'} ${Math.abs(
-    mov
-    )}`
-    );
-    console.log(movementDescriptions);
-    
-
-
-// FILTER METHOD
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-const deposits = movements.filter(mov => mov > 0);
-console.log(deposits);
-
-const depositsFor = [];
-for (const mov of movements) if (mov > 0) depositsFor.push(mov);
-console.log(depositsFor);
-
-const withdrawals = movements.filter(mov => mov < 0);
-console.log(withdrawals);
-
-
-// REDUCE METHOD
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-console.log(movements);
-
-// accumulator -> SNOWBALL
-const balance = movements.reduce((acc, cur, i, arr) => acc + cur, 100);
-console.log(balance);
-
-let balance2 = 100;
-for (const mov of movements) balance2 += mov;
-console.log(balance2);
-
-// Maximum value
-const max = movements.reduce(
-  (acc, mov) => (acc > mov ? acc : mov),
-  movements[0]
-);
-console.log(max);
-console.log(Math.max(...movements));
-
-
-// CODING CHALLANGE #2 & #3
-const data1 = [5, 2, 4, 1, 15, 8, 3];
-const data2 = [16, 6, 10, 5, 6, 1, 4];
-
-const calcAverageHumanAge = function (ages) {
-  const humanAges = ages
-    .map(age => (age <= 2 ? 2 * age : 16 + age * 4))
-    .filter(age => age >= 18)
-    .reduce((acc, age, i, arr) => acc + age / arr.length, 0);
-
-  return humanAges.toFixed(1);
-};
-console.log(calcAverageHumanAge(data1));
-console.log(calcAverageHumanAge(data2));
-
-
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-const eurToUsd = 1.1;
-
-// PIPELINE
-const totalDepositsUsd = movements
-  .filter(mov => mov > 0)
-  // .map(mov => mov * eurToUsd)
-  .map((mov, i, arr) => {
-    // console.log(arr);
-    return mov * eurToUsd;
-  })
-  .reduce((acc, mov) => acc + mov, 0);
-
-console.log(totalDepositsUsd.toFixed(2));
-
-
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-const firstWithdrawal = movements.find(mov => mov < 0);
-console.log(...movements);
-console.log(firstWithdrawal);
-
-console.log(accounts);
-
-const account = accounts.find(acc => acc.owner === 'Jessica Davis');
-console.log(account);
-
-
-// SOME & EVERY METHOD
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-console.log(movements);
-
-// Equality
-console.log(movements.includes(-130));
-
-// SOME METHOD: Condition
-console.log(movements.some(mov => mov > 5000));
-
-// EVERY METHOD: Condition
-console.log(movements.every(mov => mov > 0));
-console.log(account4.movements.every(mov => mov > 0));
-
-// Separate callback
-const deposit = mov => mov > 0;
-console.log(movements.some(deposit));
-console.log(movements.every(deposit));
-console.log(movements.filter(deposit));
-
-
-// flat and flatMap METHOD
-const arr = [1, 2, 3, [4, 5, 6], 7, 8];
-console.log(arr.flat());
-
-const arrDeep = [[[1, 2], 3], [4, [5, 6]], 7, 8];
-console.log(arrDeep);
-console.log(arrDeep.flat());
-console.log(arrDeep.flat(2));
-
-
-// w/ flat method
-const overallBalance = accounts
-  .map(acc => acc.movements)
-  .flat()
-  .reduce((acc, mov) => acc + mov, 0);
-
-// w/ flatMap method
-const overallBalance2 = accounts
-  .flatMap(acc => acc.movements)
-  .reduce((acc, mov) => acc + mov, 0);
-
-console.log(overallBalance);
-console.log(overallBalance2);
-
-
-// SORTING ARRAYS
-const movements = [200, 450, -400, 3000, -650, -130, 70, 1300];
-
-// Strings
-const owners = ['Jonas', 'Zach', 'Adam', 'Martha'];
-console.log(owners.sort());
-console.log(owners);
-
-// Mumbers
-console.log(movements);
-
-console.log(movements.sort());
-
-// return < 0, A, B (keep order)
-// return > 0, B, A (switch order)
-
-// Ascending order
-// movements.sort((a, b) => {
-//   if (a > b) return 1;
-//   if (a < b) return -1;
-// });
-movements.sort((a, b) => a - b);
-console.log(movements);
-
-// Descending order
-// movements.sort((a, b) => {
-//   if (a > b) return -1;
-//   if (a < b) return 1;
-// });
-movements.sort((a, b) => b - a);
-console.log(movements);
-*/
